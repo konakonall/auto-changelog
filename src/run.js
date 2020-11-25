@@ -4,17 +4,19 @@ const { fetchRemote } = require('./remote')
 const { fetchTags } = require('./tags')
 const { parseReleases } = require('./releases')
 const { compileTemplate } = require('./template')
+const { getGHReleases } = require('./ghRelease')
 const { parseLimit, readFile, readJson, writeFile, fileExists, updateLog, formatBytes } = require('./utils')
 
 const DEFAULT_OPTIONS = {
   output: 'CHANGELOG.md',
-  template: 'compact',
+  template: 'keepachangelog',
   remote: 'origin',
-  commitLimit: 3,
-  backfillLimit: 3,
+  commitLimit: 20,
+  backfillLimit: 20,
   tagPrefix: '',
   sortCommits: 'relevance',
   appendGitLog: '',
+  token: '',
   config: '.auto-changelog'
 }
 
@@ -52,6 +54,7 @@ const getOptions = async argv => {
     .option('--append-git-log <string>', 'string to append to git log command')
     .option('--prepend', 'prepend changelog to output file')
     .option('--stdout', 'output changelog to stdout')
+    .option('--token <string>', 'Github Token')
     .version(version)
     .parse(argv)
 
@@ -95,7 +98,9 @@ const run = async argv => {
   const tags = await fetchTags(options)
   log(`${tags.length} version tags found…`)
   const onParsed = ({ title }) => log(`Fetched ${title}…`)
-  const releases = await parseReleases(tags, options, onParsed)
+  log ('Fetching gh releases...')
+  const ghReleases = await getGHReleases(options.token)
+  const releases = await parseReleases(tags, options, ghReleases, onParsed)
   const changelog = await compileTemplate(releases, options)
   await write(changelog, options, log)
 }

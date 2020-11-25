@@ -43,6 +43,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@octokit/rest": "^18.0.9",
     "commander": "^5.0.0",
     "handlebars": "^4.7.3",
     "lodash.uniqby": "^4.7.0",

@@ -4,12 +4,18 @@ const { fetchCommits } = require('./commits')
 const MERGE_COMMIT_PATTERN = /^Merge (remote-tracking )?branch '.+'/
 const COMMIT_MESSAGE_PATTERN = /\n+([\S\s]+)/
 
-const parseReleases = async (tags, options, onParsed) => {
+const parseReleases = async (tags, options, ghReleases, onParsed) => {
   return Promise.all(tags.map(async tag => {
     const commits = await fetchCommits(tag.diff, options)
     const merges = commits.filter(commit => commit.merge).map(commit => commit.merge)
     const fixes = commits.filter(commit => commit.fixes).map(commit => ({ fixes: commit.fixes, commit }))
     const emptyRelease = merges.length === 0 && fixes.length === 0
+    const matchReleases = ghReleases.data.filter((r) => r.tag_name == tag.tag)
+    var ghReleaseBody = ''
+    if (matchReleases.length > 0) {
+      const r = matchReleases[0];
+      ghReleaseBody = r.body;
+    }
     const { message } = commits[0] || { message: null }
     const breakingCount = commits.filter(c => c.breaking).length
     const filteredCommits = commits
@@ -21,7 +27,7 @@ const parseReleases = async (tags, options, onParsed) => {
 
     return {
       ...tag,
-      summary: getSummary(message, options),
+      summary: ghReleaseBody || getSummary(message, options),
       commits: filteredCommits,
       merges,
       fixes
